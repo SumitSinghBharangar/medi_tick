@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:medi_tick/models/medicine.dart';
 import 'package:medi_tick/providers/medicine_provider.dart';
 import 'package:medi_tick/screens/home_screen.dart';
+import 'package:medi_tick/services/notification_service.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
@@ -14,6 +15,8 @@ void main() async {
   Hive.registerAdapter(MedicineAdapter());
 
   await Hive.openBox<Medicine>('medicines');
+
+  await NotificationService().init();
 
   runApp(const MyApp());
 }
