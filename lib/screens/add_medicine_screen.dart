@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -72,6 +74,8 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
+    print("medicine adding");
+    log("medicine adding");
 
     Provider.of<MedicineProvider>(context, listen: false).addMedicine(
       name: _nameController.text,
@@ -79,6 +83,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       dosageType: _dosageType,
       scheduledTime: scheduledDate,
     );
+    log('medicine added');
 
     Navigator.pop(context);
   }

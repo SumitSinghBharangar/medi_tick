@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:medi_tick/models/medicine.dart';
@@ -40,14 +42,17 @@ class MedicineProvider with ChangeNotifier {
     );
 
     await box.add(newMedicine);
+    log("scheduling notification");
+    print("scheduling notification");
 
     await NotificationService().scheduleNotification(
       id: notificationId,
       title: 'Time for your Medicine!',
       body: 'Take $dosage $dosageType of $name',
       scheduledTime: scheduledTime,
-      
     );
+    log('notification scheduled');
+    print('notification scheduled');
 
     getMedicines();
   }
