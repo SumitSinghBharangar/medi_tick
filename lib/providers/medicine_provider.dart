@@ -46,6 +46,7 @@ class MedicineProvider with ChangeNotifier {
       title: 'Time for your Medicine!',
       body: 'Take $dosage $dosageType of $name',
       scheduledTime: scheduledTime,
+      
     );
 
     getMedicines();

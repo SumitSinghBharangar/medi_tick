@@ -1,9 +1,9 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:flutter_timezone/flutter_timezone.dart'; // Import this
 
 class NotificationService {
-  // Singleton pattern to ensure we only have one instance of the notification service
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
@@ -11,10 +11,18 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  // 1. Initialize Settings
   Future<void> init() async {
+    // 1. Initialize Timezone Database
     tz.initializeTimeZones();
 
+    // 2. GET THE DEVICE TIMEZONE (Crucial Fix)
+    final String timeZoneName =
+        (await FlutterTimezone.getLocalTimezone()) as String;
+    tz.setLocalLocation(tz.getLocation(timeZoneName));
+
+    // 3. Initialize Android Settings
+    // Ensure 'ic_launcher' exists in android/app/src/main/res/mipmap-*/
+    // If you are unsure, use '@mipmap/ic_launcher' which is default.
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -24,51 +32,72 @@ class NotificationService {
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (details) {
-        // Handle what happens when user taps the notification
-        // For now, we just let it open the app
+        print("Notification Clicked");
       },
     );
   }
 
   Future<void> requestPermissions() async {
     final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+        flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
 
     if (androidImplementation != null) {
       await androidImplementation.requestNotificationsPermission();
-      await androidImplementation.requestExactAlarmsPermission(); // Required for exact timing
+      // For Android 12+, exact alarms need specific permission
+      await androidImplementation.requestExactAlarmsPermission();
     }
   }
 
-  // 2. Schedule Notification
   Future<void> scheduleNotification({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledTime,
   }) async {
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(scheduledTime, tz.local),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'med_channel_id', // Channel ID
-          'Medicine Reminders', // Channel Name
-          channelDescription: 'Notifications for medicine reminders',
-          importance: Importance.max,
-          priority: Priority.high,
-          playSound: true,
+    try {
+      // Create the TZDateTime object
+      final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+      tz.TZDateTime scheduledDate = tz.TZDateTime.from(scheduledTime, tz.local);
+
+      // FAILSAFE: If time is in the past, schedule it 5 seconds later for testing
+      if (scheduledDate.isBefore(now)) {
+        print("Time was in the past. Scheduling for tomorrow instead.");
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
+      }
+
+      print("Attempting to schedule alarm for: $scheduledDate");
+
+      await flutterLocalNotificationsPlugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledDate,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'med_channel_id',
+            'Medicine Reminders',
+            channelDescription: 'Reminders to take medicine',
+            importance: Importance.max,
+            priority: Priority.high,
+            // Ensure this sound resource exists or remove 'playSound: true' if unsure
+            playSound: true,
+          ),
         ),
-      ),
-      // Android 11+ requirement: Exact time permission
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        // uiLocalNotificationDateInterpretation:
+        //     UILocalNotificationDateInterpretation.absoluteTime,
+      );
+
+      print("SUCCESS: Alarm Scheduled for ID $id");
+    } catch (e) {
+      // THIS WILL TELL US THE ERROR
+      print("ERROR SCHEDULING NOTIFICATION: $e");
+    }
   }
 
-  // 3. Cancel Notification (Optional, but good for "Delete Medicine")
   Future<void> cancelNotification(int id) async {
     await flutterLocalNotificationsPlugin.cancel(id);
   }
