@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:medi_tick/services/notification_service.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/medicine_provider.dart';
@@ -20,6 +21,8 @@ class _HomeScreenState extends State<HomeScreen> {
       () =>
           Provider.of<MedicineProvider>(context, listen: false).getMedicines(),
     );
+
+    NotificationService().requestPermissions();
   }
 
   @override

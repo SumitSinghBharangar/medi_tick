@@ -30,6 +30,17 @@ class NotificationService {
     );
   }
 
+  Future<void> requestPermissions() async {
+    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidImplementation != null) {
+      await androidImplementation.requestNotificationsPermission();
+      await androidImplementation.requestExactAlarmsPermission(); // Required for exact timing
+    }
+  }
+
   // 2. Schedule Notification
   Future<void> scheduleNotification({
     required int id,
