@@ -45,8 +45,6 @@ class NotificationService {
     required String body,
     required DateTime scheduledTime,
   }) async {
-    // Force the timezone to UTC to avoid "Invalid Argument" errors
-    // We convert your local time to UTC for the scheduler
     final scheduledDate = tz.TZDateTime.from(scheduledTime, tz.local);
 
     await _notification.zonedSchedule(
@@ -61,6 +59,13 @@ class NotificationService {
           importance: Importance.max,
           priority: Priority.high,
           playSound: true,
+          enableVibration: true,
+          fullScreenIntent: true,
+          channelDescription: "High priority alarm for medicine.",
+          sound: UriAndroidNotificationSound(
+            "content://settings/system/alarm_alert",
+          ),
+          audioAttributesUsage: AudioAttributesUsage.alarm,
         ),
         iOS: DarwinNotificationDetails(),
       ),
