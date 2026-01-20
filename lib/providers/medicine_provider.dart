@@ -59,12 +59,20 @@ class MedicineProvider with ChangeNotifier {
 
   // 3. Delete Medicine
   Future<void> deleteMedicine(int index) async {
-    var box = await Hive.openBox<Medicine>(_boxName);
+    
+    final medicineToDelete = _medicines[index];
+    
+    // 2. Cancel the Notification using its unique ID
+   
+    await NotificationService().cancelNotification(medicineToDelete.notificationId);
 
-    await _medicines[index].delete();
+    // 3. Delete from Hive Database
+    await medicineToDelete.delete();
 
-    getMedicines(); // Refresh list
-
-    // TODO: Cancel the specific Alarm/Notification here later
+    // 4. Refresh the UI list
+    getMedicines();
+    
+    // Optional: Print to console for debugging
+    print("Deleted medicine and cancelled notification ID: ${medicineToDelete.notificationId}");
   }
 }
